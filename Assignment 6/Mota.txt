@@ -1,0 +1,74 @@
+# Mô Tả Bài Tập: Tra Cứu Kết Quả Học Tập
+
+Đây là bài tập xây dựng trang web tra cứu điểm sinh viên, sử dụng JavaScript bất đồng bộ (async/await) để mô phỏng việc gọi API và lấy dữ liệu.
+
+## Cấu Trúc Thư Mục
+
+Dự án bao gồm các tệp sau:
+* `index.html`: Tệp chính chứa giao diện (HTML), kiểu dáng (TailwindCSS) và logic (JavaScript).
+* `sinhvien.json`: Tệp dữ liệu JSON chứa thông tin sinh viên.
+* `hocphan.json`: Tệp dữ liệu JSON chứa thông tin các học phần.
+* `ketqua.json`: Tệp dữ liệu JSON chứa kết quả học tập, liên kết `sid` và `cid`.
+
+## Cấu Trúc Mã Nguồn (index.html)
+
+Tệp `index.html` được chia làm 3 phần chính:
+
+1.  **HTML (Phần `<body>`)**:
+    * Sử dụng TailwindCSS (tải qua CDN) để xây dựng giao diện.
+    * Có một form tra cứu (`<form id="search-form">`) chứa 1 `<input id="sid-input">` và 1 `<button id="search-btn">`.
+    * Một khu vực thông báo trạng thái (`<div id="status-message">`).
+    * Một khu vực hiển thị thông tin sinh viên (`<div id="student-info">`).
+    * Một bảng (`<table>`) với phần thân (`<tbody id="results-table-body">`) để hiển thị kết quả.
+
+2.  **CSS (Phần `<head>`)**:
+    * Sử dụng link CDN của TailwindCSS để có thể dùng ngay các lớp tiện ích (utility classes) mà không cần cài đặt.
+
+3.  **JavaScript (Phần `<script>`)**:
+    * **DOM Selection**: Lấy ra các phần tử HTML cần thiết ngay từ đầu.
+    * **Hàm Helper**: Các hàm phụ trợ như `convertScoreToLetter()`, `showStatus()`, `displayStudentInfo()`, `displayResults()`, `clearResults()`.
+    * **Hàm `handleSearch(event)`**: Đây là hàm `async` chính, được gọi khi người dùng nhấn "Tra cứu".
+
+## Cách Xử Lý Bất Đồng Bộ
+
+Trọng tâm của bài là hàm `async function handleSearch(event)`.
+
+1.  **Sử dụng `async/await`**: Hàm `handleSearch` được khai báo là `async` để cho phép sử dụng từ khóa `await` bên trong nó. Điều này giúp viết code bất đồng bộ (như gọi API, nạp file) một cách tuần tự, dễ đọc như code đồng bộ.
+
+2.  **Sử dụng `fetch()`**: Em sử dụng `fetch(URL)` để lấy dữ liệu từ 3 tệp JSON. `fetch` trả về một `Promise`. Em dùng `await` để đợi `Promise` này hoàn thành và trả về đối tượng `Response`.
+
+3.  **Sử dụng `Promise.all()`**:
+    * Để tối ưu hóa tốc độ, thay vì `await` 3 lần riêng biệt (nối tiếp nhau) cho 3 tệp JSON, em sử dụng `Promise.all()`.
+    * `Promise.all([...])` nhận vào một mảng các `Promise` (là các lệnh `fetch()`) và thực thi chúng **song song**.
+    * Nó chỉ hoàn thành khi *tất cả* các `Promise` bên trong đã hoàn thành. Kết quả trả về là một mảng chứa kết quả của cả 3 `Promise`, đúng theo thứ tự.
+    * Cú pháp: `const [allStudents, allCourses, allResults] = await Promise.all([...]);`
+
+4.  **Xử lý lỗi `try...catch`**:
+    * Toàn bộ logic bất đồng bộ (fetch, xử lý dữ liệu) được bọc trong một khối `try`.
+    * Nếu bất kỳ `Promise` nào bị `reject` (ví dụ: `fetch` thất bại do file không tồn tại, file JSON sai cú pháp), nó sẽ ngay lập tức nhảy vào khối `catch(error)`.
+    * Trong `catch`, em hiển thị thông báo lỗi cho người dùng (`showStatus(error.message, 'error')`).
+
+5.  **Khối `finally`**:
+    * Khối `finally` luôn được thực thi, dù `try` thành công hay `catch` bắt lỗi.
+    * Em dùng nó để đảm bảo nút "Tra cứu" (`searchBtn.disabled = false;`) luôn được bật lại, cho phép người dùng thử tra cứu lại.
+
+## Quy Trình Hoạt Động (Khi tra cứu)
+
+1.  Người dùng nhập MSSV, nhấn "Tra cứu". Sự kiện `submit` của form được kích hoạt.
+2.  Hàm `handleSearch` chạy. Nó gọi `event.preventDefault()` để ngăn trang tải lại.
+3.  Hiển thị trạng thái "Đang tải..." và vô hiệu hóa nút "Tra cứu".
+4.  **Kiểm tra Cache**:
+    * Tạo một `cacheKey` (ví dụ: `student_data_20241001`).
+    * Kiểm tra `localStorage.getItem(cacheKey)`.
+    * Nếu có dữ liệu cache: Dùng `JSON.parse()` để đọc, sau đó gọi hàm `displayStudentInfo()` và `displayResults()`, hiển thị thông báo "Tải từ cache" và `return` (kết thúc hàm).
+5.  **Nếu không có cache**:
+    * Thực thi `await Promise.all()` để tải song song 3 tệp `sinhvien.json`, `hocphan.json`, `ketqua.json`.
+    * Tìm sinh viên trong mảng `allStudents`. Nếu không thấy, ném lỗi (`throw new Error(...)`).
+    * Lọc kết quả từ `allResults` để lấy các môn học của sinh viên đó.
+    * Dùng `.map()` để "làm giàu" dữ liệu: Ghép thông tin từ `allCourses` (tên học phần, tín chỉ) vào danh sách kết quả của sinh viên.
+    * Tạo một đối tượng `dataToDisplay` chứa thông tin `student` và `results` đã xử lý.
+    * Lưu đối tượng này vào `localStorage` (dùng `JSON.stringify()`).
+    * Gọi `displayStudentInfo()` và `displayResults()` để hiển thị lên giao diện.
+    * Hiển thị thông báo "Tải dữ liệu thành công!".
+6.  Nếu có lỗi ở Bước 5, khối `catch` sẽ bắt lỗi và hiển thị.
+7.  Khối `finally` chạy, bật lại nút "Tra cứu".

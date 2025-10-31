@@ -1,0 +1,10 @@
+[
+  { "cid": "IT3100", "name": "Lập trình hướng đối tượng", "credits": 2 },
+  { "cid": "IT3120", "name": "Phân tích và thiết kế hệ thống", "credits": 3 },
+  { "cid": "IT3170", "name": "Thuật toán ứng dụng", "credits": 2 },
+  { "cid": "IT3931", "name": "Project II", "credits": 2 },
+  { "cid": "IT4015", "name": "Nhập môn an toàn thông tin", "credits": 3 },
+  { "cid": "IT4060", "name": "Lập trình mạng", "credits": 2 },
+  { "cid": "IT4785", "name": "Phát triển ứng dụng cho thiết bị di động", "credits": 3 },
+  { "cid": "PE2501", "name": "Cầu lông 1", "credits": 0 }
+]

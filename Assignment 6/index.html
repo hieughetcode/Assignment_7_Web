@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra Cứu Kết Quả Học Tập</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-xl">
+        
+        <h1 class="text-3xl font-bold text-center text-blue-700 mb-8">
+            Tra Cứu Kết Quả Học Tập Sinh Viên
+        </h1>
+
+        <form id="search-form" class="flex flex-col sm:flex-row gap-4 mb-6">
+            <input type="text" id="sid-input" placeholder="Nhập Mã số sinh viên (ví dụ: 20241001)"
+                   class="flex-grow shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+            
+            <button type="submit" id="search-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded focus:outline-none focus:shadow-outline transition duration-300 whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+                Tra cứu
+            </button>
+        </form>
+
+        <div id="status-message" class="text-center mb-6"></div>
+
+        <div id="student-info" class="mb-6"></div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left table-auto border-collapse">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="border px-4 py-3 text-gray-800 font-semibold">Mã HP</th>
+                        <th class="border px-4 py-3 text-gray-800 font-semibold">Tên học phần</th>
+                        <th class="border px-4 py-3 text-gray-800 font-semibold">Số TC</th>
+                        <th class="border px-4 py-3 text-gray-800 font-semibold">Học kỳ</th>
+                        <th class="border px-4 py-3 text-gray-800 font-semibold">Điểm số</th>
+                        <th class="border px-4 py-3 text-gray-800 font-semibold">Điểm chữ</th>
+                    </tr>
+                </thead>
+                <tbody id="results-table-body">
+                    <tr>
+                        <td colspan="6" class="border px-4 py-3 text-center text-gray-500">
+                            Chưa có dữ liệu. Vui lòng nhập MSSV và tra cứu.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+// Lấy các phần tử DOM
+        const searchForm = document.getElementById('search-form');
+        const sidInput = document.getElementById('sid-input');
+        const searchBtn = document.getElementById('search-btn');
+        const statusMessage = document.getElementById('status-message');
+        const studentInfoContainer = document.getElementById('student-info');
+        const resultsTableBody = document.getElementById('results-table-body');
+//Chuyển điểm sang dạng chữ
+        function convertScoreToLetter(score) {
+            if (score >= 9.5) return 'A+';
+            if (score >= 8.5) return 'A';
+            if (score >= 8.0) return 'B+';
+            if (score >= 7.0) return 'B';
+            if (score >= 6.5) return 'C+';
+            if (score >= 5.5) return 'C';
+            if (score >= 5.0) return 'D+';
+            if (score >= 4.0) return 'D';
+            return 'F';
+        }
+//Hiển thị trạng thái
+        function showStatus(message, type = 'loading') {
+            let colorClass = 'text-blue-600';
+            if (type === 'error') colorClass = 'text-red-600 font-bold';
+            if (type === 'success') colorClass = 'text-green-600';
+            if (type === 'cache') colorClass = 'text-purple-600 italic';
+            
+            statusMessage.innerHTML = `<p class="${colorClass}">${message}</p>`;
+        }
+//Hiển thị thông tin sinh viên
+        function displayStudentInfo(student) {
+            studentInfoContainer.innerHTML = `
+                <h2 class="text-2xl font-semibold text-gray-800">Thông tin sinh viên</h2>
+                <div class="grid grid-cols-2 gap-x-4 mt-2">
+                    <p><strong>Họ tên:</strong> ${student.name}</p>
+                    <p><strong>MSSV:</strong> ${student.sid}</p>
+                    <p><strong>Ngày sinh:</strong> ${student.dob}</p>
+                </div>
+            `;
+        }
+//Hiển thị kết quả học tập
+        function displayResults(results) {
+            resultsTableBody.innerHTML = '';
+            if (results.length === 0) {
+                resultsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="border px-4 py-3 text-center text-gray-500">
+                            Sinh viên này chưa có điểm.
+                        </td>
+                    </tr>`;
+                return;
+            }
+//Chèn dữ liệu
+            results.forEach(item => {
+                const row = document.createElement('tr');
+                row.classList.add('hover:bg-gray-50');
+                
+                const score = parseFloat(item.score);
+                const letterGrade = convertScoreToLetter(score);
+
+                row.innerHTML = `
+                    <td class="border px-4 py-2">${item.cid}</td>
+                    <td class="border px-4 py-2">${item.name}</td>
+                    <td class="border px-4 py-2 text-center">${item.credits}</td>
+                    <td class="border px-4 py-2 text-center">${item.term}</td>
+                    <td class="border px-4 py-2 text-center">${score.toFixed(1)}</td>
+                    <td class="border px-4 py-2 text-center font-semibold">${letterGrade}</td>
+                `;
+                resultsTableBody.appendChild(row);
+            });
+        }
+//Xóa kết quả hiển thị cũ
+        function clearResults() {
+            statusMessage.innerHTML = '';
+            studentInfoContainer.innerHTML = '';
+            resultsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="border px-4 py-3 text-center text-gray-500">
+                        Chưa có dữ liệu. Vui lòng nhập MSSV và tra cứu.
+                    </td>
+                </tr>`;
+        }
+//Xử lý bất đồng bộ
+        async function handleSearch(event) {
+            event.preventDefault();
+            const sid = sidInput.value.trim();
+            if (!sid) {
+                showStatus('Vui lòng nhập Mã số sinh viên!', 'error');
+                return;
+            }
+            // Xóa kết quả cũ
+            clearResults();
+            showStatus('Đang tải dữ liệu...', 'loading');
+            searchBtn.disabled = true;
+            try {
+                const cacheKey = `student_data_${sid}`;
+                const cachedData = localStorage.getItem(cacheKey);
+
+                if (cachedData) {
+                    const data = JSON.parse(cachedData);
+                    displayStudentInfo(data.student);
+                    displayResults(data.results);
+                    showStatus('Đã tải dữ liệu từ cache.', 'cache');
+                    return;
+                }
+                const [allStudents, allCourses, allResults] = await Promise.all([
+                    fetch('./sinhvien.json').then(res => res.json()),
+                    fetch('./hocphan.json').then(res => res.json()),
+                    fetch('./ketqua.json').then(res => res.json())
+                ]);
+                // Tìm sinh viên
+                const student = allStudents.find(s => s.sid === sid);
+                if (!student) {
+                    throw new Error(`Không tìm thấy sinh viên có MSSV: ${sid}`);
+                }
+
+                // Lọc kết quả của sinh viên đó
+                const studentResults = allResults.filter(r => r.sid === sid);
+
+                const detailedResults = studentResults.map(result => {
+                    const course = allCourses.find(c => c.cid === result.cid);
+                    return {
+                        ...result,
+                        name: course ? course.name : 'N/A',
+                        credits: course ? course.credits : 'N/A'
+                    };
+                });
+
+                //Chuẩn bị dữ liệu
+                const dataToDisplay = {
+                    student: student,
+                    results: detailedResults
+                };
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify(dataToDisplay));
+                } catch (e) {
+                    console.warn('Không thể lưu cache:', e);
+                }
+
+                //Hiển thị dữ liệu
+                displayStudentInfo(dataToDisplay.student);
+                displayResults(dataToDisplay.results);
+                showStatus('Tải dữ liệu thành công!', 'success');
+
+            } catch (error) {
+                console.error('Lỗi khi tra cứu:', error);
+                // Hiển thị lỗi
+                showStatus(error.message, 'error');
+                clearResults();
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+        //Form event listener
+        searchForm.addEventListener('submit', handleSearch);
+
+    </script>
+</body>
+</html>
