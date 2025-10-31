@@ -1,7 +1,7 @@
 Assignment 7
 1, Component nào quản lý state?
 Ans:
-    Component 'App' quản lý các state chính của ứng dụng: 'searchQuery', 'isLoading', 'error', 'status' và 'resultsData,
+    Component 'App' quản lý các state chính của ứng dụng: 'searchQuery', 'isLoading', 'error', 'status' và 'resultsData'
     Component 'SearchForm' có state riêng [sid, setSid] quản lý nhập liệu trong Form
 2, Khi nào useEffect được kích hoạt?
 Ans:
